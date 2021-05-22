@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
@@ -9,75 +10,143 @@ class Window(QMainWindow):
         
 
         self.setGeometry(100,100,1030,800)
-        self.setWindowTitle("DeskMan: Text Editor")
         self.setStyleSheet("background-color: white;")
 
-        self._createMenuBar()
-        self._textedit()
+        self.path = None
 
-    def _createMenuBar(self):
+        self.text_edit()
+        self.create_MenuBar()
+        self.update_page_title()
+
+        # setting default font for editor 
+        defaultfont = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+        defaultfont.setPointSize(12)
+        self.textEditor.setFont(defaultfont)
+
+        self.status = QStatusBar()
+        self.setStatusBar(self.status)
+
+
+    def create_MenuBar(self):
 
         menuBar = QMenuBar(self)
         self.setMenuBar(menuBar)
 
+        menuFont = menuBar.font()
+        menuFont.setPointSize(13)
+        menuBar.setFont(menuFont)
+
+        self.setStyleSheet("""QMenuBar { background-color:rgba(135,206,235 ,1 ); }""")
+
+        #menu item i
+
         #file actions
         actionFile = menuBar.addMenu("&File")
-        newAction = actionFile.addAction("New")
-        openAction = actionFile.addAction("Open")
-        saveAction = actionFile.addAction("Save")
-        saveasAction = actionFile.addAction("Save As")
-        actionFile.addSeparator()
-        quitAction = actionFile.addAction("Quit")
 
-        #file actions shortcuts
-        saveAction.setShortcut("Ctrl+S")
-        saveasAction.setShortcut("Shift+Ctrl+S")
+        #open new file
+        newAction = actionFile.addAction("New")
         newAction.setShortcut("Ctrl+N")
+        
+        
+        #open existing files
+        openAction = actionFile.addAction("Open")
         openAction.setShortcut("Ctrl+O")
-        quitAction.setShortcut("Ctrl+Q")
+        openAction.triggered.connect(self.open_file)
+
+        #save
+        saveAction = actionFile.addAction("Save")
+        saveAction.setShortcut("Ctrl+S")
+        saveAction.triggered.connect(self.save_file)
+
+        #save as 
+        saveasAction = actionFile.addAction("Save As")
+        saveasAction.setShortcut("Shift+Ctrl+S")
+        saveasAction.triggered.connect(self.save_as_file)
+
+        
+        #menu item ii
         
         #editing options
         editMenu = menuBar.addMenu("&Edit")
-        copyAction = editMenu.addAction("Copy")
-        pasteAction = editMenu.addAction("Paste")
-        cutAction = editMenu.addAction("Cut")
 
-        #edit option shortcuts
+        copyAction = QAction("Copy",self)
+        copyAction.setStatusTip("Copy selected text")
         copyAction.setShortcut("Ctrl+C")
+        copyAction.triggered.connect(self.textEditor.copy)
+        editMenu.addAction(copyAction)
+
+        pasteAction = QAction("Paste",self)
         pasteAction.setShortcut("Ctrl+V")
+        pasteAction.setStatusTip("paste copied text")
+        pasteAction.triggered.connect(self.textEditor.paste)
+        editMenu.addAction(pasteAction)
+
+        cutAction = QAction('Cut',self)
         cutAction.setShortcut("Ctrl+X")
+        cutAction.setStatusTip("cut selected text")
+        cutAction.triggered.connect(self.textEditor.cut)
+        editMenu.addAction(cutAction)
 
-        #finding actions
-        findMenu = menuBar.addMenu("&Find")
-        findAction =findMenu.addAction("Find")
-        replaceAction = findMenu.addAction("Replace")
-
-        #find and replace shortcuts
-        findAction.setShortcut("Ctrl+F")
-        replaceAction.setShortcut("Ctrl+H")
+        #menu item iii
 
         helpMenu = menuBar.addMenu("&Help")
 
 
-    def _textedit(self):
-        self.text = QTextEdit(self)
-        self.setCentralWidget(self.text)
+    def text_edit(self):
+        self.textEditor = QTextEdit(self)
+        self.setCentralWidget(self.textEditor)
 
-    def _filemanager(self):
+
+    #open file method
+    def open_file(self):
+        self.path, _ = QFileDialog.getOpenFileName(self, "Open file", "", 
+                             "Text documents (*.txt);Python Files (*.py); PHP Files(*.php); All Files(*.*)")
+        if self.path:
+        	with open(self.path, 'r') as f:
+        		text_content = f.read()
+        		self.textEditor.setText(text_content)
+        		self.update_page_title()
+        else:
+            self.path_error()
+
+    #save files method
+    def save_file(self):
+    	if not self.path:
+    		return self.save_as_file()
+    	self.save_file_to_path(self.path)
+
+
+    #save as method
+
+    def save_file_to_path(self,path):
+    	self.text = self.textEditor.toPlainText()
+
+    	with open(path, 'w') as f:
+    		f.write(self.text)
+    	self.path = path
+    	self.update_page_title()
+
+    # save file to path method
+    def save_as_file(self):
+    	self.path,_ =QFileDialog.getSaveFileName(self,"Save as","",
+    		               "Text Documents (*.txt); Python Files (*.py); PHP Files (*.php); All Files(*.*)")
+    	if not self.path:
+    		return
+    	self.save_file_to_path(self.path)
+
+    def update_page_title(self):
+    	self.setWindowTitle("%s - DeskMan: Text Editor"%(os.path.basename(self.path)
+    		                                             if self.path else "Untitled"))
+    def path_error(self):
+        messageBox = QMessageBox()
+        messageBox.setWindowTitle("Invalid file type")
+        messageBox.setText("Selected file or path is invalid. Please select valid file or  double check path ")
+        messageBox,exec()
+   	
         
-
-
-
-
-    
-        
-        
-        
-
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setApplicationName("DeskMan: Text Editor")
     screen = Window()
     screen.show()
     sys.exit(app.exec_())
