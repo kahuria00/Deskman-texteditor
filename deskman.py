@@ -141,8 +141,7 @@ class Window(QMainWindow):
         messageBox = QMessageBox()
         messageBox.setWindowTitle("Invalid file type")
         messageBox.setText("Selected file or path is invalid. Please select valid file or  double check path ")
-        messageBox,exec()
-   	
+        messageBox,exec()  	
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -150,10 +149,3 @@ if __name__ == "__main__":
     screen = Window()
     screen.show()
     sys.exit(app.exec_())
-
-
-
-
-
-
-
